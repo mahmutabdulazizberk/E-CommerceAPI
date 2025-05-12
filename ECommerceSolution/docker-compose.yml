@@ -1,51 +1,16 @@
-﻿version: '3.8' # Docker Compose dosya formatı sürümü
-
 services:
-  # PostgreSQL Veritabanı Servisi
   db:
-    image: postgres:15 # PostgreSQL'in resmi imajını kullan (veya güncel kararlı bir sürüm)
-    container_name: ecommerce_db
-    restart: always # Konteyner durursa otomatik yeniden başlat
-    environment:
-      POSTGRES_USER: user # Veritabanı kullanıcı adı (Değiştirebilirsin)
-      POSTGRES_PASSWORD: 123456sEvEn* # !!! BURAYA GÜÇLÜ BİR ŞİFRE GİR !!!
-      POSTGRES_DB: ecommercedb # Oluşturulacak veritabanı adı (Değiştirebilirsin)
-    ports:
-      - "5432:5432" # Host:Konteyner port eşleştirmesi
-    volumes:
-      - postgres_data:/var/lib/postgresql/data # Verilerin kalıcı olması için volume tanımı
-
-  # API Servisi
-  api:
-    container_name: ecommerce_api
-    build:
-      context: . # Build context'i çözümün ana dizini
-      dockerfile: ECommerceApi/Dockerfile # Kullanılacak Dockerfile'ın yolu
+    image: postgres:16
+    container_name: ecommerce_postgres_db # Konteyner adı
     restart: always
-    ports:
-      # Host portlarını konteyner portlarına yönlendir
-      # launchSettings.json dosyasındaki Kestrel portları ile eşleşmeli
-      - "8080:8080" # HTTP
-      - "8081:443"  # HTTPS
     environment:
-      # API'nin veritabanına erişimi için bağlantı dizesi
-      # Host=db -> Yukarıdaki db servisinin adı
-      # Password -> Yukarıdaki POSTGRES_PASSWORD ile aynı olmalı!
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=ecommercedb;Username=user;Password=123456sEvEn*
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:443;http://+:8080
-      # Geliştirme ortamı HTTPS sertifikası için (Detayları sonra ayarlayacağız)
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=devpasword # !!! Geliştirme sertifikası şifren (varsa) !!!
-      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      POSTGRES_PASSWORD: "123456seven" # !!! GÜVENLİK UYARISI: Bu şifre GÜVENLİ DEĞİLDİR !!!
+      POSTGRES_USER: "ecommerce_user"  # Veritabanı kullanıcı adı
+      POSTGRES_DB: "ecommerce_db"      # Veritabanı adı
+    ports:
+      - "5432:5432" # Host portu 5432 meşgulse bunu değiştirin (örn: "5433:5432")
     volumes:
-       # Yerel HTTPS sertifikasını konteynere bağlamak için (Windows için)
-       # Detayları sonra ayarlayacağız, şimdilik yorum satırı olarak kalabilir veya bu şekilde bırakılabilir
-       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
-       - ${USERPROFILE}/.aspnet/https:/https:ro
-    depends_on:
-      - db # API'nin başlamadan önce db'nin hazır olmasını bekle
+      - postgres_data:/var/lib/postgresql/data # Veri saklama alanı
 
-# Veritabanı verilerini saklamak için isimlendirilmiş volume
 volumes:
-  postgres_data:
-    driver: local
+  postgres_data:    # Veri saklama alanının tanımı
