@@ -1,3 +1,5 @@
+
+### English Version
 ```markdown
 # E-Commerce API
 
@@ -339,9 +341,3 @@ Please make sure to:
 ## License
 
 [Specify License Here, e.g., MIT]
-
----
-This README should provide a comprehensive guide for anyone looking to understand, set up, and run the project.
-```
-
-Umarım bu düzenlenmiş hali işinize yarar!
