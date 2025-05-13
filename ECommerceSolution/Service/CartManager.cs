@@ -11,12 +11,11 @@ using System.Security.Claims;
 
 namespace Service;
 
-public class CartManager(IRepositoryManager manager) :ICartService
+public class CartManager(IRepositoryManager manager, IHttpContextAccessor httpContextAccessor) :ICartService
 {
     private readonly IValidator<CartDTO> cartDTOValidation = new CartDTOValidation();
     private readonly IValidator<CartItemDTO> cartItemDTOValidation = new CartItemDTOValidation();
     private readonly IValidator<CartItemQuantityDTO> cartItemQuantityDTO = new CartItemQuantityDTOValidation();
-    private readonly IHttpContextAccessor httpContextAccessor = new HttpContextAccessor();
 
     public Result<Cart> GetUserCart()
     {

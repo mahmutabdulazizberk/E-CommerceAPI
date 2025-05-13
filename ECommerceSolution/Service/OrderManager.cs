@@ -8,9 +8,8 @@ using Service.Contracts;
 
 namespace Service;
 
-public class OrderManager(IRepositoryManager manager) : IOrderService
+public class OrderManager(IRepositoryManager manager, IHttpContextAccessor httpContextAccessor) : IOrderService
 {
-    private readonly IHttpContextAccessor httpContextAccessor = new HttpContextAccessor();
     public Result<Order> CreateOrderFromCart()
     {
         var userId = httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -28,7 +27,7 @@ public class OrderManager(IRepositoryManager manager) : IOrderService
             Totalamount = cart.Cartitems.Sum(b => b.Quantity * b.Product.Price),
             Status = "Pending",
         };
-        manager.Order.Create(order);
+        manager.Order.CreateOrder(order);
 
         foreach (var item in cart.Cartitems)
         {
@@ -40,7 +39,7 @@ public class OrderManager(IRepositoryManager manager) : IOrderService
                 Quantity = item.Quantity,
                 Unitprice = item.Product.Price,
             };
-            manager.OrderItem.Create(orderItem);
+            manager.OrderItem.CreateOrderItem(orderItem);
         }
         foreach (var orderItem in cart.Cartitems.ToList())
         {

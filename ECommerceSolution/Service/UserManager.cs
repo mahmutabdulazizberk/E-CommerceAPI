@@ -10,10 +10,9 @@ using Microsoft.AspNetCore.Http;
 
 namespace Service;
 
-public class UserManager(IRepositoryManager manager) : IUserService
+public class UserManager(IRepositoryManager manager, IHttpContextAccessor httpContextAccessor) : IUserService
 {
     private readonly IValidator<UserDTO> userDTOValidation= new UserDTOValidation();
-    private readonly IHttpContextAccessor httpContextAccessor= new HttpContextAccessor();
     public Result<IEnumerable<User>> GetAllUsers()
     {
         IEnumerable<User> users = manager.User.GetAllUsers();
