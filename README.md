@@ -127,6 +127,7 @@ Bu, tüm servisleri başlatmanın en kolay yoludur.
 
 ### 4. Veritabanı Migration'ları (Entity Framework Core)
 
+Veritabanı PlantUML Şeması
 ![Database Tablosu uml](https://github.com/user-attachments/assets/a04cef80-801a-463d-9e9a-5d7379eb3c32)
 
 
