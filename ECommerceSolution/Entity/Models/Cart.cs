@@ -1,4 +1,6 @@
-﻿namespace Entity.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace Entity.Models;
 
 public partial class Cart
 {
@@ -10,6 +12,7 @@ public partial class Cart
 
     public DateTime? Updatedat { get; set; }
 
+    [JsonIgnore]
     public virtual ICollection<Cartitem> Cartitems { get; set; } = new List<Cartitem>();
 
     public virtual User User { get; set; } = null!;

@@ -12,4 +12,9 @@ public class CartRepository(AppDbContext context) : RepositoryBase<Cart>(context
             .Include(c => c.Cartitems)
             .SingleOrDefault()!;
     public void AddCart(Cart cart) => Create(cart);
+    public IList<string> GetCartItemIdsByCartId(string cartId) =>
+        FindByCondition(c => c.Id == cartId)           // IQueryable<Cart>
+            .SelectMany(c => c.Cartitems               // Cart içindeki öğeler
+                .Select(ci => ci.Id))   // Sadece Id kolonları
+            .ToList();                                 
 }

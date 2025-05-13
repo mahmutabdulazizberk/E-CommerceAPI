@@ -1,4 +1,6 @@
-﻿namespace Entity.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace Entity.Models;
 
 public partial class Order
 {
@@ -13,7 +15,7 @@ public partial class Order
     public DateTime? Createdat { get; set; }
 
     public DateTime? Updatedat { get; set; }
-
+    [JsonIgnore]
     public virtual ICollection<Orderitem> Orderitems { get; set; } = new List<Orderitem>();
 
     public virtual User User { get; set; } = null!;

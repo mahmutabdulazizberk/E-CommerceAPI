@@ -13,17 +13,21 @@ namespace Service;
 
 public class CartManager(IRepositoryManager manager, IHttpContextAccessor httpContextAccessor) :ICartService
 {
-    private readonly IValidator<CartDTO> cartDTOValidation = new CartDTOValidation();
     private readonly IValidator<CartItemDTO> cartItemDTOValidation = new CartItemDTOValidation();
-    private readonly IValidator<CartItemQuantityDTO> cartItemQuantityDTO = new CartItemQuantityDTOValidation();
 
-    public Result<Cart> GetUserCart()
+    public Result<CartWithItemIdsDTO> GetUserCart()
     {
         var httpUser = httpContextAccessor.HttpContext?.User ?? throw new UnauthorizedAccessException();
         var userId = httpUser.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new UnauthorizedAccessException();
         var cart = manager.Cart.GetByUserId(userId);
         if (cart == null) throw new ApiException("Cart not found.", "CART_NOT_FOUND", 404);
-        return Result<Cart>.SuccessResult(cart, "Cart retrieved successfully.");
+        var items=manager.Cart.GetCartItemIdsByCartId(cart.Id);
+        var dto = new CartWithItemIdsDTO
+        {
+            Cart = cart,
+            ItemIds = items
+        };
+        return Result<CartWithItemIdsDTO>.SuccessResult(dto, "Cart retrieved successfully.");
     }
     public Result<Cart> AddItemToCart(CartItemDTO cartItemDto)
     {
@@ -49,18 +53,18 @@ public class CartManager(IRepositoryManager manager, IHttpContextAccessor httpCo
             manager.Cart.AddCart(cart);
         }
 
-        var product = manager.Product.GetOneProduct(cartItemDto.ProductId);
+        var product = manager.Product.GetOneProduct(cartItemDto.Productid);
         if (product==null) throw new ApiException("Product not found.", "PRODUCT_NOT_FOUND", 404);
         if (cartItemDto.Quantity > product.Stockquantity) throw new ApiException("Insufficient stock.", "INSUFFICIENT_STOCK", 400);
 
-        var item= manager.CartItem.GetByCartIdAndProductId(cart.Id, cartItemDto.ProductId);
+        var item= manager.CartItem.GetByCartIdAndProductId(cart.Id, cartItemDto.Productid);
         if (item ==null)
         {
             item = new Cartitem
             {
                 Id = Guid.NewGuid().ToString(),
                 Cartid = cart.Id,
-                Productid = cartItemDto.ProductId,
+                Productid = cartItemDto.Productid,
                 Quantity = cartItemDto.Quantity,
             };
             manager.CartItem.AddCartItem(item);
@@ -75,7 +79,8 @@ public class CartManager(IRepositoryManager manager, IHttpContextAccessor httpCo
         manager.Product.UpdateOneProduct(product);
 
         manager.Save();
-        return Result<Cart>.SuccessResult(cart, "Product added to cart");
+        return Result<Cart>.SuccessResult(cart);
+
         //!BCrypt.Net.BCrypt.Verify("1234", databasedeki hashlenmiş veri) -> karşılaştırma
         //BCrypt.Net.BCrypt.HashPassword("1234") -> hashleyer databaseye atma
     }

@@ -11,13 +11,13 @@ namespace Presentation.Controller;
 [ApiController]
 public class AuthenticationController(IOptions<AuthenticationDTO> authenticationDto,IServiceManager manager) : ControllerBase
 {
-    [HttpPost("Giris")]
+    [HttpPost("Login")]
     public ActionResult Login([FromBody] LoginDTO loginDto)
     {
         return Ok(manager.AuthenticationService.CreateOneAuthentication(loginDto));
     }
 
-    [HttpPost("Kayit")]
+    [HttpPost("Register")]
     public IActionResult Register([FromBody] UserDTO userDto)
     {
         return Ok(manager.AuthenticationService.CreateOneUser(userDto));

@@ -1,5 +1,4 @@
-﻿using Entity.Models;
-using FluentValidation;
+﻿using FluentValidation;
 using Service.DTOs;
 
 namespace Service.Validations;

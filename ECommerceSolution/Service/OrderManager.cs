@@ -20,11 +20,12 @@ public class OrderManager(IRepositoryManager manager, IHttpContextAccessor httpC
 
         if (!cart.Cartitems.Any()) throw new ApiException("Cart is empty", "CART_EMPTY", 400);
 
+        
         var order = new Order()
         {
             Id = Guid.NewGuid().ToString(),
             Userid = userId,
-            Totalamount = cart.Cartitems.Sum(b => b.Quantity * b.Product.Price),
+            Totalamount = cart.Cartitems.Sum(b => b.Quantity * manager.Product.GetOneProduct(b.Productid).Price),
             Status = "Pending",
         };
         manager.Order.CreateOrder(order);
@@ -37,7 +38,7 @@ public class OrderManager(IRepositoryManager manager, IHttpContextAccessor httpC
                 Orderid = order.Id,
                 Productid = item.Productid,
                 Quantity = item.Quantity,
-                Unitprice = item.Product.Price,
+                Unitprice = manager.Product.GetOneProduct(item.Productid).Price,
             };
             manager.OrderItem.CreateOrderItem(orderItem);
         }
@@ -61,5 +62,16 @@ public class OrderManager(IRepositoryManager manager, IHttpContextAccessor httpC
 
 
         return Result<IEnumerable<Order>>.SuccessResult(orders, "Orders retrieved successfully");
+    }
+    public Result<Order> GetUserOrder(string orderId)
+    {
+        var userId = httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userId == null) throw new UnauthorizedAccessException();
+
+        var order = manager.Order
+            .ByOrderId(userId, orderId);
+        if (string.IsNullOrEmpty(order.Id)) throw new ApiException("No orders found for this user", "ORDERS_NOT_FOUND", 404);
+        
+        return Result<Order>.SuccessResult(order, "Orders retrieved successfully");
     }
 }

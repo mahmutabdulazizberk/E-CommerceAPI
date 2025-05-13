@@ -3,6 +3,7 @@
     public class Result<T> : ResultBase
     {
         public T? Data { get; set; }
+
         public static Result<T> SuccessResult(T data, string message = "Operation succesfully operated")
         {
             return new Result<T>
@@ -33,6 +34,7 @@
                 Data = data
             };
         }
+
         public static Result<T> ErrorResult()
         {
             return new Result<T>
