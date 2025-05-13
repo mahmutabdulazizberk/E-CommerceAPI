@@ -7,5 +7,7 @@ public interface IRepositoryManager
     IProductRepository Product { get; }
     ICartRepository Cart { get; }
     ICartItemRepository CartItem { get; }
+    IOrderRepository Order { get; }
+    IOrderItemRepository OrderItem { get; }
     void Save();
 }

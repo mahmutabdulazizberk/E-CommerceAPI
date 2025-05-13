@@ -12,6 +12,7 @@ namespace Service
         private readonly Lazy<IProductService> _productService;
         private readonly Lazy<ICartService> _cartService;
         private readonly Lazy<IAuthenticationService> _authenticationService;
+        private readonly Lazy<IOrderService> _orderService;
 
         public ServiceManager(IRepositoryManager repositoryManager, IOptions<AuthenticationDTO> jwtSettingsOptions)
         {
@@ -20,6 +21,7 @@ namespace Service
             _productService = new Lazy<IProductService>(() => new ProductManager(repositoryManager));
             _cartService = new Lazy<ICartService>(() => new CartManager(repositoryManager));
             _authenticationService = new Lazy<IAuthenticationService>(() => new AuthenticationManager(repositoryManager, jwtSettingsOptions.Value));
+            _orderService = new Lazy<IOrderService>(() => new OrderManager(repositoryManager));
         }
 
         public ICategoryService CategoryService => _categoryService.Value;
@@ -27,5 +29,6 @@ namespace Service
         public IProductService ProductService => _productService.Value;
         public ICartService CartService => _cartService.Value;
         public IAuthenticationService AuthenticationService => _authenticationService.Value;
+        public IOrderService OrderService => _orderService.Value;
     }
 }
