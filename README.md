@@ -1,3 +1,345 @@
+### Türkçe Versiyonu
+```markdown
+# E-Ticaret API
+
+## Genel Bakış
+
+Bu proje, .NET 8 ile geliştirilmiş bir e-ticaret platformu için RESTful API'dir. Kullanıcıları, ürünleri, kategorileri, alışveriş sepetlerini ve siparişleri yönetmek için temel işlevleri sağlar. Uygulama, geliştirme ve dağıtım kolaylığı için Docker Compose ile yönetilen, API ve PostgreSQL veritabanının ayrı container'larda çalıştığı Docker kullanılarak container'laştırmak üzere tasarlanmıştır.
+
+## Özellikler
+
+* **Kullanıcı Kimlik Doğrulama ve Yönetimi**: Kullanıcılar için güvenli kayıt ve giriş.
+* **Ürün Katalog Yönetimi**: Ürünler ve kategoriler için CRUD (Oluşturma, Okuma, Güncelleme, Silme) işlemleri.
+* **Alışveriş Sepeti İşlevselliği**: Sepete ürün ekleme, güncelleme, çıkarma ve sepeti görüntüleme.
+* **Sipariş İşleme**: Müşteri siparişlerini oluşturma ve yönetme.
+* **Rol Tabanlı Yetkilendirme**: (E-ticaret API'lerinde yaygın olan örtük bir özellik)
+
+## Kullanılan Teknolojiler
+
+* **.NET 8**
+* **ASP.NET Core 8** (RESTful API'ler oluşturmak için)
+* **Entity Framework Core 8** (PostgreSQL ile veri erişimi için)
+* **PostgreSQL** (ilişkisel veritabanı olarak)
+* **Docker & Docker Compose** (container'laştırma ve düzenleme için)
+* **PgAdmin4** (web tabanlı PostgreSQL yönetim aracı)
+* **JWT (JSON Web Tokens)** güvenli kimlik doğrulama için (`AuthenticationManager.cs` dosyasından anlaşılmaktadır)
+
+## Proje Yapısı
+
+Çözüm aşağıdaki projelere ayrılmıştır:
+
+* `ECommerceApi/`: Ana ASP.NET Core Web API projesi (başlangıç projesi). API imajını oluşturmak için `Dockerfile` içerir.
+* `Repository/`: Veri erişim katmanı, Entity Framework Core kullanarak repository desenini uygular ve veritabanı migration'larını içerir.
+* `Service/`: İş mantığı katmanı, controller'lar ve repository'ler arasındaki işlemleri yöneten servisleri içerir.
+* `Presentation/`: Gelen HTTP isteklerini işleyen API controller'larını içerir.
+* `Entity/`: Alan modellerini (veritabanı varlıkları) ve Veri Aktarım Nesnelerini (DTO'lar) içerir.
+* `docker-compose.yml`: Çözümün kök dizininde (`ECommerceSolution/`) bulunur, bu dosya çoklu container Docker uygulamasını (API, veritabanı, PgAdmin) tanımlar ve yapılandırır.
+
+## Ön Gereksinimler
+
+* **Docker Desktop** (veya Docker Compose CLI eklentisi ile Docker Engine) kurulu ve çalışır durumda olmalıdır.
+* **.NET 8 SDK** (Entity Framework Core migration komutlarını yerel olarak çalıştırmak veya Docker dışında geliştirme yapmak için gereklidir).
+
+## Başlarken
+
+Projeyi ayağa kaldırmak ve çalıştırmak için aşağıdaki adımları izleyin:
+
+### 1. Depoyu Klonlayın
+
+```bash
+git clone <deponuzun-url-adresi>
+```
+Proje kök dizinine gidin (örn. `ECommerceSolution/` veya `docker-compose.yml` dosyasının bulunduğu dizin):
+```bash
+cd <proje-kok-dizini>
+```
+
+### 2. Yapılandırma
+
+#### Docker Compose (`docker-compose.yml`)
+Bu dosya, veritabanı kimlik bilgileri ve PgAdmin için ortam değişkenleri de dahil olmak üzere servis yapılandırmasının çoğunu yönetir.
+
+#### API Bağlantı Dizesi (Connection String)
+
+* **Docker Compose ile çalışırken:**
+    `ecommerceapi` servisi, PostgreSQL veritabanına `postgres` servis adını kullanarak bağlanacak şekilde yapılandırılmıştır. Bağlantı dizesi şu şekilde olmalıdır:
+    `Server=postgres;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1`
+
+    Bunun `ECommerceApi/appsettings.json` dosyasında ayarlandığından veya tercihen `ecommerceapi` servisi için `docker-compose.yml` dosyasındaki ortam değişkenleri kullanılarak üzerine yazıldığından emin olun:
+
+    ```yaml
+    # docker-compose.yml içinde, services.ecommerceapi.environment altında:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=postgres;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1"
+      ASPNETCORE_URLS: http://+:8080
+    ```
+    *(Eğer `ConnectionStrings__DefaultConnection` zaten mevcut değilse veya `docker-compose.yml` dosyanızda doğru şekilde yapılandırılmamışsa yorum satırını kaldırın/ekleyin).*
+
+* **Yerel Geliştirme/Migration Bağlantı Dizesi:**
+    EF Core migration'larını ana makinenizden (Docker dışından) çalıştırmak için, `ECommerceApi/appsettings.Development.json` dosyanızda `localhost`'a işaret eden bir bağlantı dizesi bulunmalıdır:
+
+    ```json
+    {
+      "ConnectionStrings": {
+        "DefaultConnection": "Server=localhost;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1"
+      }
+      // ... diğer ayarlar
+    }
+    ```
+
+### 3. Docker Compose ile Çalıştırma (Önerilen)
+
+Bu, tüm servisleri başlatmanın en kolay yoludur.
+
+1.  `docker-compose.yml` dosyasının bulunduğu dizine gidin (örneğin, `ECommerceSolution/`).
+2.  Tüm servisleri ayrılmış modda (detached mode) derleyin ve başlatın:
+
+    ```bash
+    docker-compose up -d --build
+    ```
+
+    Bu komut şunları yapacaktır:
+    * `ECommerceApi/Dockerfile` kullanarak `ecommerceapi` servisi için Docker imajını oluşturacaktır.
+    * `postgres` ve `dpage/pgadmin4` imajlarını henüz mevcut değilse çekecektir.
+    * API, PostgreSQL veritabanı ve PgAdmin için container'ları oluşturup başlatacaktır.
+    * Servisler için özel bir ağ (muhtemelen `docker-compose.yml` dosyanızda tanımlandığı gibi `ecom_network`) oluşturacaktır.
+    * PostgreSQL veri kalıcılığı için bir volume (örneğin, `postgres_data`) bağlayacaktır.
+
+#### Servislere Erişim:
+
+* **E-Ticaret API**: `http://localhost:8080` (veya `docker-compose.yml` dosyasında container portu 8080'e eşlenen ana makine portu)
+* **Swagger UI (API Dokümantasyonu)**: `http://localhost:8080/swagger`
+* **PgAdmin4**: `http://localhost:5050`
+    * Varsayılan E-posta: `admin@example.com`
+    * Varsayılan Parola: `123456seven`
+
+    PgAdmin'den veritabanına bağlanmak için:
+    1.  "Add New Server"a tıklayın.
+    2.  **General sekmesi**: Bir ad verin (örneğin, `ECommerceDB_Docker`).
+    3.  **Connection sekmesi**:
+        * Host name/address: `postgres` (bu, Docker ağı içindeki PostgreSQL container'ının servis adıdır)
+        * Port: `5432`
+        * Maintenance database: `ECommerceApiDB` (veya `postgres`)
+        * Username: `ecomuser`
+        * Password: `StrongPass1`
+    4.  Bağlantıyı kaydedin.
+
+### 4. Veritabanı Migration'ları (Entity Framework Core)
+
+Migration'lar, veritabanı şemasını oluşturmak ve güncellemek için kullanılır.
+
+* **Migration'lar için Bağlantı Dizesi (ana makineden çalıştırıldığında):**
+    Yapılandırma bölümünde belirtildiği gibi, `ECommerceApi/appsettings.Development.json` dosyanızın (veya EF araçlarınızın kullandığı yapılandırma kaynağının) şuna sahip olduğundan emin olun:
+    `Server=localhost;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1`
+
+* **Migration'ları Uygulama:**
+    1.  Servislerin (özellikle `postgres`) çalışıyor olması gerekir (örneğin, `docker-compose up -d` ile).
+    2.  Çözümünüzün kök dizininde (örneğin, `.sln` dosyasının bulunduğu `ECommerceSolution/` dizini veya projelerin çözümlenebileceği bir dizin) bir terminal açın.
+    3.  **Yeni Bir Migration Eklemek İçin** (EF Core modellerinizde değişiklik yaptıysanız):
+
+        ```bash
+        dotnet ef migrations add MigrasyonAdiniz --project Repository --startup-project ECommerceApi --context AppDbContext
+        ```
+        `MigrasyonAdiniz` yerine migration için açıklayıcı bir ad yazın.
+
+    4.  **Migration'ları Veritabanına Uygulamak İçin**:
+
+        ```bash
+        dotnet ef database update --project Repository --startup-project ECommerceApi --context AppDbContext
+        ```
+        Bu komut, bekleyen tüm migration'ları veritabanı şemasına uygular.
+
+    **Not**: Bazı uygulamalar, başlangıçta migration'ları otomatik olarak uygulayacak şekilde yapılandırılmıştır. Bu tür bir mantık için `ECommerceApi/Program.cs` dosyanızı kontrol edin. Eğer öyleyse, manuel `database update` yalnızca bu başarısız olursa veya ilk kurulum için gerekebilir.
+
+### 5. Servisleri Docker ile Manuel Çalıştırma (Alternatif)
+
+Docker Compose kullanmak istemiyorsanız, container'ları ayrı ayrı çalıştırabilirsiniz.
+
+1.  **Bir Docker Ağı Oluşturun** (servislerin adıyla bulunması için önerilir):
+
+    ```bash
+    docker network create benim-ecom-agim
+    ```
+
+2.  **PostgreSQL Container'ını Başlatın**:
+
+    ```bash
+    docker run -d --name postgres --network benim-ecom-agim \
+      -e POSTGRES_USER=ecomuser \
+      -e POSTGRES_PASSWORD=StrongPass1 \
+      -e POSTGRES_DB=ECommerceApiDB \
+      -p 5432:5432 \
+      -v postgres_ozel_veri:/var/lib/postgresql/data \
+      postgres
+    ```
+    * `postgres_ozel_veri`, veri kalıcılığı için adlandırılmış bir volume'dür.
+
+3.  **PgAdmin4 Container'ını Başlatın**:
+
+    ```bash
+    docker run -d --name pgadmin4 --network benim-ecom-agim \
+      -p 5050:80 \
+      -e PGADMIN_DEFAULT_EMAIL=admin@example.com \
+      -e PGADMIN_DEFAULT_PASSWORD=123456seven \
+      dpage/pgadmin4
+    ```
+    Docker Compose bölümünde açıklandığı gibi PgAdmin'den `postgres` (ana makine adı) adresine bağlanın.
+
+4.  **E-Ticaret API Container'ını Derleyin ve Çalıştırın**:
+    1.  `ECommerceApi` dizinine (Dockerfile dosyasının bulunduğu yer) gidin:
+        ```bash
+        cd ECommerceApi
+        ```
+    2.  Docker imajını derleyin:
+        ```bash
+        docker build -t ecommerce-api-manuel .
+        ```
+    3.  API container'ını çalıştırın:
+        ```bash
+        docker run -d --name ecommerceapi-manuel --network benim-ecom-agim \
+          -p 8080:8080 \
+          -e ASPNETCORE_ENVIRONMENT=Development \
+          -e ConnectionStrings__DefaultConnection="Server=postgres;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1" \
+          -e ASPNETCORE_URLS="http://+:8080" \
+          ecommerce-api-manuel
+        ```
+        * API, `benim-ecom-agim` üzerindeki servis adını kullanarak `postgres` container'ına bağlanacaktır.
+        * API, `http://localhost:8080` adresinden erişilebilir olacaktır.
+
+#### Kullanıcı Tarafından Sağlanan Manuel Komutlar Hakkında:
+
+Sağladığınız komutlar şunlardı:
+```bash
+# PostgreSQL için
+docker run -d --name postgres --network bridge[INSPECT KOMUTU ÇALIŞTIRILARAK ALINACAK BİLGİ] -e POSTGRES_USER=ecomuser -e POSTGRES_PASSWORD=StrongPass1 -e POSTGRES_DB=ECommerceApiDB -p 5432:5432 postgres
+
+# PgAdmin4 için
+docker run -d --name pgadmin4 --network bridge[INSPECT KOMUTU ÇALIŞTIRILARAK ALINACAK BİLGİ] -p 5050:80 -e PGADMIN_DEFAULT_EMAIL=admin@example.com -e PGADMIN_DEFAULT_PASSWORD=123456seven dpage/pgadmin4
+```
+`bridge[INSPECT KOMUTU ÇALIŞTIRILARAK ALINACAK BİLGİ]` yer tutucusu, mevcut bir Docker bridge ağının adını ifade eder. `docker network ls` ile ağları listeleyebilirsiniz. Varsayılan `bridge` ağını kullanırsanız, container'lar genellikle IP adresleri üzerinden iletişim kurar; bu adresler değişebileceği için güvenilir olmayabilir. Yukarıda oluşturulan `benim-ecom-agim` gibi özel, kullanıcı tanımlı bir bridge ağı veya Docker Compose'un oluşturduğu ağı kullanmak, container adları için DNS çözümlemesi sağladığından genellikle tercih edilir.
+
+---
+
+## Bağlantı Dizeleri Özeti
+
+* **EF Migration'ları için (ana makineden):**
+    `Server=localhost;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1`
+    *Bunu `appsettings.Development.json` dosyasında veya yerel makinenizden komutları çalıştırıyorsanız EF araçları tarafından istendiğinde kullanın.*
+
+* **Docker içinde çalışan API için (Docker Compose veya özel bir ağda manuel çalıştırma yoluyla):**
+    `Server=postgres;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1`
+    *`postgres`, PostgreSQL container'ının servis adıdır. Bu, API servisi için `docker-compose.yml` dosyasında veya `docker run` komutunda bir ortam değişkeni olarak ayarlanmalı veya imaja paketlenen API'nin `appsettings.json` dosyasındaki varsayılan değer olmalıdır.*
+
+* **Kullanıcı tarafından sağlanan "Normal Kullanımda" Bağlantı Dizesi:**
+    `Server=172.17.0.3;Port=5432;Database=ECommerceApiDB;Username=ecomuser;Password=StrongPass1`
+    *Bu IP adresi (örneğin, `172.17.0.3`), muhtemelen ana makineden veya aynı özel ağdaki başka bir container'dan görüldüğü şekliyle bir Docker bridge ağındaki (genellikle varsayılan `bridge` ağı) PostgreSQL container'ının IP adresidir. Container'lar yeniden başlatılırsa veya yeniden oluşturulursa bu IP adresi değişebilir. Container'lar arası iletişim için Docker Compose veya özel bridge ağları ile servis adlarını kullanmak daha sağlam ve önerilir.*
+
+---
+
+## API Uç Noktalarına Genel Bakış
+
+API, kaynakları yönetmek için çeşitli uç noktalar sunar. Bunları Swagger UI kullanarak keşfedebilirsiniz:
+
+* **Swagger UI**: `http://localhost:8080/swagger`
+
+Ana uç nokta grupları (`Presentation/Controllers/` dizininizdeki controller adlarına göre):
+
+* `api/Authentication`: Kullanıcı kaydı ve girişi için (örn. `/api/Authentication/register`, `/api/Authentication/login`). (Controller: `AuthenticationController.cs`)
+* `api/Users`: Kullanıcı yönetimi için. (Controller: `UsersController.cs`)
+* `api/Categories`: Ürün kategorilerini yönetmek için. (Controller: `CategoiesController.cs` - *Not: Dosya adında bir yazım hatası var, "Categoies". Eğer controller'ın `[Route]` özelliğinde düzeltilmişse rota `/api/Categories` olabilir.*)
+* `api/Products`: Ürünleri yönetmek için. (Controller: `ProductsController.cs`)
+* `api/Carts`: Alışveriş sepeti işlemleri için. (Controller: `CartsController.cs`)
+* `api/Orders`: Siparişleri yönetmek için. (Controller: `OrdersControllers.cs` - *Not: Dosya adı çoğul "OrdersControllers". Eğer controller'ın `[Route]` özelliğinde bu şekilde tanımlanmışsa rota `/api/Orders` olabilir.*)
+
+Her bir uç nokta için istek/yanıt modelleri, parametreler ve belirli yollar hakkında ayrıntılı bilgi için `http://localhost:8080/swagger` adresindeki Swagger dokümantasyonuna başvurun.
+
+---
+
+## Faydalı Docker Komutları
+
+* Çalışan container'ları listeleme:
+    ```bash
+    docker ps
+    ```
+* Tüm container'ları listeleme (durdurulmuş olanlar dahil):
+    ```bash
+    docker ps -a
+    ```
+* Bir container için logları görüntüleme:
+    ```bash
+    docker logs <container_adi_veya_id>
+    ```
+    Örnek: `docker logs ecommerceapi` (eğer `docker-compose.yml` dosyasındaki adları kullanıyorsanız)
+* Tüm servisleri durdurma (Docker Compose kullanıyorsanız, `docker-compose.yml` dosyasının bulunduğu dizinden):
+    ```bash
+    docker-compose down
+    ```
+* Tüm servisleri durdurma ve kaldırma, volume'ler dahil (`postgres_data` için verileri saklamak istiyorsanız dikkatli kullanın):
+    ```bash
+    docker-compose down -v
+    ```
+* Belirli bir container'ı durdurma:
+    ```bash
+    docker stop <container_adi_veya_id>
+    ```
+* Belirli bir container'ı kaldırma (önce durdurulmuş olmalıdır):
+    ```bash
+    docker rm <container_adi_veya_id>
+    ```
+* Docker imajlarını listeleme:
+    ```bash
+    docker images
+    ```
+* Bir Docker imajını kaldırma:
+    ```bash
+    docker rmi <imaj_id_veya_adi>
+    ```
+* Docker ağlarını listeleme:
+    ```bash
+    docker network ls
+    ```
+* Container ağ ayarlarını inceleme:
+    ```bash
+    docker inspect <CONTAINER_ADI> --format '{{json .NetworkSettings.Networks}}'
+    ```
+    Örnek: `docker inspect postgres --format '{{json .NetworkSettings.Networks}}'`
+* Çalışan bir container'ın kabuğuna erişme (hata ayıklama için):
+    ```bash
+    docker exec -it <container_adi_veya_id> /bin/bash  # (veya bash mevcut değilse /bin/sh)
+    ```
+    Örnek: `docker exec -it ecommerceapi /bin/sh`
+
+---
+
+## Faydalı Sistem Komutları
+
+* 5432 portunu dinleyen işlemleri gösterme (Windows):
+    ```cmd
+    netstat -aon | findstr :5432
+    ```
+    Ardından işlem adını bulmak için `tasklist | findstr <PID>` komutunu kullanın (buradaki `<PID>` bir önceki komuttan alınır).
+
+* 5432 portunu dinleyen işlemleri gösterme (Linux/macOS):
+    ```bash
+    sudo lsof -i :5432
+    # veya
+    ss -tulnp | grep :5432
+    ```
+
+---
+
+## Katkıda Bulunma
+
+Pull request'ler kabul edilir. Büyük değişiklikler için, lütfen önce neyi değiştirmek istediğinizi tartışmak üzere bir issue açın.
+
+Lütfen şunlardan emin olun:
+* Açık commit mesajları yazın.
+* Yeni özellikler ekler veya mevcutları değiştirirseniz dokümantasyonu güncelleyin.
+* Uygun şekilde testler ekleyin veya güncelleyin (eğer testler projenin bir parçasıysa).
+* Mevcut kodlama stilini veya kurallarını izleyin.
+
+---
 
 ### English Version
 ```markdown
@@ -337,7 +679,3 @@ Please make sure to:
 * Follow any existing coding style or conventions.
 
 ---
-
-## License
-
-[Specify License Here, e.g., MIT]
