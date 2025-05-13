@@ -50,10 +50,9 @@ public class CartManager(IRepositoryManager manager) :ICartService
             manager.Cart.AddCart(cart);
         }
 
-        var product = manager.Product.GetOneProduct(cartItemDto.ProductId)
-                      ?? throw new ApiException("Product not found.", "PRODUCT_NOT_FOUND", 404);
-        if (product.Stockquantity < cartItemDto.Quantity)
-            throw new ApiException("Insufficient stock.", "INSUFFICIENT_STOCK", 400);
+        var product = manager.Product.GetOneProduct(cartItemDto.ProductId);
+        if (product==null) throw new ApiException("Product not found.", "PRODUCT_NOT_FOUND", 404);
+        if (cartItemDto.Quantity > product.Stockquantity) throw new ApiException("Insufficient stock.", "INSUFFICIENT_STOCK", 400);
 
         var item= manager.CartItem.GetByCartIdAndProductId(cart.Id, cartItemDto.ProductId);
         if (item ==null)
@@ -64,7 +63,6 @@ public class CartManager(IRepositoryManager manager) :ICartService
                 Cartid = cart.Id,
                 Productid = cartItemDto.ProductId,
                 Quantity = cartItemDto.Quantity,
-                Createdat = DateTime.UtcNow
             };
             manager.CartItem.AddCartItem(item);
             cart.Cartitems.Add(item);
@@ -72,7 +70,6 @@ public class CartManager(IRepositoryManager manager) :ICartService
         else
         {
             item.Quantity += cartItemDto.Quantity;
-            item.Updatedat = DateTime.UtcNow;
             manager.CartItem.UpdateCartItem(item);
         }
         product.Stockquantity -= cartItemDto.Quantity;
